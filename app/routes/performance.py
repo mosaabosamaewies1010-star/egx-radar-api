@@ -30,8 +30,8 @@ def _slice_stats(rows):
         return None
 
     closed = [r for r in rows if r.pnl_pct is not None]
-    wins   = [r for r in closed if r.outcome == "WIN"]
-    losses = [r for r in closed if r.outcome == "LOSS"]
+    wins   = [r for r in closed if r.pnl_pct > 0]
+    losses = [r for r in closed if r.pnl_pct <= 0]
 
     avg_win  = round(sum(r.pnl_pct for r in wins)   / len(wins),   2) if wins   else None
     avg_loss = round(sum(r.pnl_pct for r in losses) / len(losses), 2) if losses else None

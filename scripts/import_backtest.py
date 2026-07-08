@@ -56,12 +56,25 @@ def run(csv_path: str, dry_run: bool = False):
             rows = list(csv.DictReader(f))
         print(f"CSV rows: {len(rows)}")
 
+        # normalize column names (Phase I uses "sym" instead of "symbol")
+        for r in rows:
+            if "sym" in r and "symbol" not in r:
+                r["symbol"] = r["sym"]
+            if "signal_dt" in r and "signal_date" not in r:
+                r["signal_date"] = r["signal_dt"]
+            if "tp1" in r and "tp1_price" not in r:
+                r["tp1_price"] = r["tp1"]
+            if "tp2" in r and "tp2_price" not in r:
+                r["tp2_price"] = r["tp2"]
+            if "sl" in r and "sl_price" not in r:
+                r["sl_price"] = r["sl"]
+
         # ── 3. Ensure Stock rows exist ────────────────────────────────────────
         unique_stocks = {}
         for r in rows:
             sym = r["symbol"].upper()
             if sym not in unique_stocks:
-                unique_stocks[sym] = r["sector"]
+                unique_stocks[sym] = r.get("sector", "بنوك")
 
         stock_map: dict[str, int] = {}   # symbol → stock.id
         created_stocks = 0
@@ -87,7 +100,7 @@ def run(csv_path: str, dry_run: bool = False):
         for r in rows:
             sym          = r["symbol"].upper()
             signal_date  = date.fromisoformat(r["signal_date"])
-            entry_price  = float(r["entry_price"])
+            entry_price  = float(r["entry_price"] if r.get("entry_price") else r.get("ep", 0))
 
             stock = stock_map[sym]
 
@@ -104,18 +117,21 @@ def run(csv_path: str, dry_run: bool = False):
             exit_reason = r["exit_reason"]
             outcome     = map_outcome(exit_reason)
 
+            tp1 = _f(r, "tp1") or _f(r, "tp1_price")
+            tp2 = _f(r, "tp2") or _f(r, "tp2_price")
+            sl  = _f(r, "sl")  or _f(r, "sl_price")
             opp = Opportunity(
                 stock_id   = stock.id,
                 run_date   = signal_date,
                 opp_type   = "Backtest",
                 entry_price   = entry_price,
-                tp1_price     = float(r["tp1"]),
-                tp2_price     = float(r["tp2"]),
-                sl_price      = float(r["sl"]),
-                rr_ratio      = round((float(r["tp1"]) - entry_price) / (entry_price - float(r["sl"])), 2)
-                                if float(r["sl"]) < entry_price else None,
+                tp1_price     = tp1,
+                tp2_price     = tp2,
+                sl_price      = sl,
+                rr_ratio      = round((tp1 - entry_price) / (entry_price - sl), 2)
+                                if tp1 and sl and sl < entry_price else None,
                 max_hold_days = 20,
-                radar_score   = float(r["score"]),
+                radar_score   = _f(r, "score") or _f(r, "score_pct"),
                 signal_quality = (
                     "HIGH"   if float(r["score_pct"]) >= 80 else
                     "MEDIUM" if float(r["score_pct"]) >= 65 else "LOW"
@@ -135,7 +151,7 @@ def run(csv_path: str, dry_run: bool = False):
                     "contrib_bb_squeeze":    _i(r, "contrib_bb_squeeze"),
                     "contrib_mfi":           _i(r, "contrib_mfi"),
                     "contrib_rel_strength":  _i(r, "contrib_rel_strength"),
-                    "sector":                r["sector"],
+                    "sector":                r.get("sector", ""),
                     "investment":            _f(r, "investment"),
                     "shares":                _i(r, "shares"),
                 },

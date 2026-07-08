@@ -11,6 +11,10 @@ logging.basicConfig(
 
 app = create_app()
 
+with app.app_context():
+    from app import db
+    db.create_all()
+
 if __name__ == "__main__":
     debug = os.getenv("FLASK_DEBUG", "1") == "1"
 

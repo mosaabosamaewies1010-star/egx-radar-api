@@ -15,6 +15,8 @@ with app.app_context():
     from app import db
     from app.models import Opportunity
     db.create_all()
+    from scripts.seed_stocks import seed as seed_stocks
+    seed_stocks()
     if Opportunity.query.count() == 0:
         import os, sys
         csv_path = os.path.join(os.path.dirname(__file__), "scripts", "trades_I7.csv")

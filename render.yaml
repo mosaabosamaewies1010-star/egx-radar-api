@@ -24,7 +24,9 @@ services:
         # Update this after Vercel gives you the real URL
         value: https://egx-radar.vercel.app
       - key: BOT_API_KEY
-        generateValue: true      # copy this value into egx_bot_v4.py
+        generateValue: true
+      - key: PYTHON_VERSION
+        value: "3.12.0"
 
 databases:
   - name: egx-radar-db

@@ -50,8 +50,10 @@ def create_app(config_name: str = "development") -> Flask:
     from app.routes.payments      import payments_bp
     from app.routes.performance   import performance_bp
     from app.routes.bot           import bot_bp
+    from app.routes.admin         import admin_bp
 
     app.register_blueprint(health_bp)
+    app.register_blueprint(admin_bp)
     app.register_blueprint(stocks_bp)
     app.register_blueprint(market_bp)
     app.register_blueprint(opps_bp)
